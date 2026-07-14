@@ -56,6 +56,7 @@ export const githubScanTask = task({
         }),
         headers: {
           'Content-Type': 'application/json',
+          'X-Atlas-Api-Key': process.env.ATLAS_API_KEY || '',
           'X-Internal-Token': internalSecret,
         },
         method: 'POST',
@@ -85,6 +86,7 @@ export const githubScanTask = task({
           }),
           headers: {
             'Content-Type': 'application/json',
+            'X-Atlas-Api-Key': process.env.ATLAS_API_KEY || '',
             'X-Internal-Token': internalSecret,
           },
           method: 'POST',
