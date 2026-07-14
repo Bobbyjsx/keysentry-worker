@@ -16,9 +16,10 @@ export class GitEngine {
   private static gitleaksPatterns: Record<string, RegExp> | null = null;
 
   private static readonly FALLBACK_PATTERNS: Record<string, RegExp> = {
-    AWS: /(AKIA[0-9A-Z]{16})/,
-    'Generic Token': /bearer\s+([a-zA-Z0-9\-._~+/]+=*)/i,
-    Stripe: /(sk_live_[0-9a-zA-Z]{24})/,
+    AWS: /(AKIA[0-9A-Z]{16})/g,
+    'Generic Token': /bearer\s+([a-zA-Z0-9\-._~+/]+=*)/gi,
+    'OpenAI (Legacy/Test)': /sk-[a-zA-Z0-9]{48}/g,
+    Stripe: /(sk_live_[0-9a-zA-Z]{24})/g,
   };
 
   constructor(githubToken: string) {
@@ -55,7 +56,10 @@ export class GitEngine {
       }
 
       if (Object.keys(patterns).length > 0) {
-        GitEngine.gitleaksPatterns = patterns;
+        GitEngine.gitleaksPatterns = {
+          ...patterns,
+          ...GitEngine.FALLBACK_PATTERNS,
+        };
       } else {
         GitEngine.gitleaksPatterns = GitEngine.FALLBACK_PATTERNS;
       }
