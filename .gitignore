@@ -4,3 +4,6 @@ dist/
 .env
 .env.*
 !.env.example
+.venv/
+.DS_Store
+**/.DS_Store
