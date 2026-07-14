@@ -1,0 +1,37 @@
+{
+  "author": "",
+  "dependencies": {
+    "@octokit/rest": "^22.0.1",
+    "@trigger.dev/sdk": "^4.5.3",
+    "dotenv": "^17.4.2",
+    "fernet": "^0.3.3",
+    "toml": "^4.3.0"
+  },
+  "description": "",
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.3",
+    "@types/fernet": "^0.4.3",
+    "@types/node": "^26.1.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  },
+  "keywords": [],
+  "license": "ISC",
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": "biome check --fix"
+  },
+  "main": "index.js",
+  "name": "keysentry-worker",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "deploy": "npx trigger.dev@latest deploy",
+    "dev": "npx trigger.dev@latest dev",
+    "lint": "biome check .",
+    "prepare": "husky",
+    "test": "vitest run"
+  },
+  "type": "module",
+  "version": "1.0.0"
+}
