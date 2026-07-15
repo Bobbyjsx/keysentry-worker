@@ -31,10 +31,12 @@ export const githubScanTask = task({
       await GitEngine.loadGitleaksPatterns();
       const gitEngine = new GitEngine(githubToken);
 
-      // 3. Scan Repository
-      logger.info('Fetching repository tree...');
-      const discoveredKeys = await gitEngine.scanRepository(payload.repository);
-      logger.info(`Scan complete. Found ${discoveredKeys.length} keys.`);
+      // 3. Scan Target
+      logger.info(`Resolving and scanning target: ${payload.repository}`);
+      const scanResult = await gitEngine.scanTarget(payload.repository);
+      logger.info(
+        `Scan complete. Found ${scanResult.discoveredKeys.length} keys.`
+      );
 
       // 4. Report back to keysentry-api webhook securely
       const apiHost = process.env.KEYSENTRY_API_URL || 'http://localhost:8001';
@@ -50,7 +52,9 @@ export const githubScanTask = task({
 
       const response = await fetch(`${apiHost}/api/v1/scans/webhook`, {
         body: JSON.stringify({
-          keys_found: discoveredKeys,
+          files_scanned: scanResult.filesScanned,
+          keys_found: scanResult.discoveredKeys,
+          repos_scanned: scanResult.reposScanned,
           scan_id: payload.scan_id,
           user_id: payload.user_id,
         }),
@@ -67,7 +71,9 @@ export const githubScanTask = task({
       }
 
       return {
-        keys_found: discoveredKeys.length,
+        files_scanned: scanResult.filesScanned,
+        keys_found: scanResult.discoveredKeys.length,
+        repos_scanned: scanResult.reposScanned,
         scan_id: payload.scan_id,
       };
     } catch (error: any) {

@@ -11,6 +11,11 @@ export interface DiscoveredKey {
   risk_level: string;
 }
 
+export interface ScanResult {
+  discoveredKeys: DiscoveredKey[];
+  filesScanned: number;
+}
+
 export class GitEngine {
   private octokit: Octokit;
   private static gitleaksPatterns: Record<string, RegExp> | null = null;
@@ -69,8 +74,68 @@ export class GitEngine {
     }
   }
 
-  public async scanRepository(repoName: string): Promise<DiscoveredKey[]> {
+  public async scanTarget(target: string): Promise<{
+    discoveredKeys: DiscoveredKey[];
+    reposScanned: number;
+    filesScanned: number;
+  }> {
+    let reposScanned = 0;
+    let filesScanned = 0;
     const discoveredKeys: DiscoveredKey[] = [];
+
+    if (target.includes('/')) {
+      const result = await this.scanRepository(target);
+      return {
+        discoveredKeys: result.discoveredKeys,
+        filesScanned: result.filesScanned,
+        reposScanned: 1,
+      };
+    }
+
+    try {
+      const { data: entity } = await this.octokit.rest.users.getByUsername({
+        username: target,
+      });
+
+      let repos: any[] = [];
+      if (entity.type === 'Organization') {
+        repos = await this.octokit.paginate(
+          this.octokit.rest.repos.listForOrg,
+          {
+            org: target,
+          }
+        );
+      } else {
+        repos = await this.octokit.paginate(
+          this.octokit.rest.repos.listForUser,
+          {
+            username: target,
+          }
+        );
+      }
+
+      for (const repo of repos) {
+        if (logger) {
+          logger.info(`Scanning discovered repository: ${repo.full_name}`);
+        }
+        const result = await this.scanRepository(repo.full_name);
+        discoveredKeys.push(...result.discoveredKeys);
+        reposScanned++;
+        filesScanned += result.filesScanned;
+      }
+    } catch (e: any) {
+      if (logger) {
+        logger.error(`Error resolving target ${target}: ${e.message}`);
+      }
+      throw new Error(`Failed to resolve target '${target}': ${e.message}`);
+    }
+
+    return { discoveredKeys, filesScanned, reposScanned };
+  }
+
+  public async scanRepository(repoName: string): Promise<ScanResult> {
+    const discoveredKeys: DiscoveredKey[] = [];
+    let filesScanned = 0;
     const [owner, repo] = repoName.split('/');
 
     if (!owner || !repo) {
@@ -93,6 +158,8 @@ export class GitEngine {
           file.path &&
           /\.(js|ts|py|json|env|txt|md|yml|yaml)$/.test(file.path)
       );
+
+      filesScanned = textFiles.length;
 
       const patternsToUse =
         GitEngine.gitleaksPatterns || GitEngine.FALLBACK_PATTERNS;
@@ -159,6 +226,6 @@ export class GitEngine {
       throw e;
     }
 
-    return discoveredKeys;
+    return { discoveredKeys, filesScanned };
   }
 }
