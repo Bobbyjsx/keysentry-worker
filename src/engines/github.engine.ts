@@ -38,12 +38,19 @@ export class GithubEngine {
         const allAuthRepos = await this.octokit.paginate(
           this.octokit.rest.repos.listForAuthenticatedUser,
           {
-            affiliation: 'owner,collaborator',
+            affiliation: 'owner,collaborator,organization_member',
+            per_page: 100,
           }
+        );
+        console.log(
+          `Fetched ${allAuthRepos.length} total repos for authenticated user.`
         );
         // Filter out repositories that do not belong to the target username
         repos = allAuthRepos.filter(
           (r) => r.owner.login.toLowerCase() === target.toLowerCase()
+        );
+        console.log(
+          `After filtering for owner '${target}', ${repos.length} repos remain.`
         );
       } else {
         repos = await this.octokit.paginate(
