@@ -96,6 +96,12 @@ export class GithubEngine {
         console.warn(`Repository ${repoName} is empty or not found (404)`);
         return { filesScanned: 0, keysFound: [] };
       }
+      if (err.status === 451) {
+        console.warn(
+          `Repository ${repoName} is unavailable due to legal reasons or DMCA takedown (451). Skipping.`
+        );
+        return { filesScanned: 0, keysFound: [] };
+      }
       throw err;
     }
 
