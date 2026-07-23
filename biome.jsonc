@@ -7,31 +7,13 @@
           "level": "on",
           "options": {
             "groups": [
-              [
-                "\u0000"
-              ], // Side effects
-              [
-                "react"
-              ], // React first
-              [
-                "@*",
-                "*"
-              ], // External packages (scoped and unscoped)
-              [
-                "@ui/*",
-                "@app/*",
-                "@types/*"
-              ], // Internal aliases
-              [
-                "../*"
-              ], // Parent
-              [
-                "./*"
-              ], // Same folder
-              [
-                "*.css",
-                "*.scss"
-              ] // Style
+              ["\u0000"], // Side effects
+              ["react"], // React first
+              ["@*", "*"], // External packages (scoped and unscoped)
+              ["@ui/*", "@app/*", "@types/*"], // Internal aliases
+              ["../*"], // Parent
+              ["./*"], // Same folder
+              ["*.css", "*.scss"] // Style
             ]
           }
         },
@@ -50,13 +32,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": [
-      "**",
-      "!node_modules",
-      "!.next",
-      "!dist",
-      "!build"
-    ]
+    "includes": ["**", "!node_modules", "!.next", "!dist", "!build"]
   },
   "formatter": {
     "bracketSpacing": true,
@@ -107,15 +83,8 @@
           "fix": "safe",
           "level": "warn",
           "options": {
-            "attributes": [
-              "classList"
-            ],
-            "functions": [
-              "clsx",
-              "cva",
-              "tw",
-              "tw.*"
-            ]
+            "attributes": ["classList"],
+            "functions": ["clsx", "cva", "tw", "tw.*"]
           }
         }
       },

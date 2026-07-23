@@ -1,7 +1,7 @@
 import { defineConfig } from '@trigger.dev/sdk/v3';
 
 export default defineConfig({
-  dirs: ['src/trigger'],
+  dirs: ['src/tasks'],
   logLevel: 'log',
   maxDuration: 3600,
   project: 'proj_rmftovjsfngdonvuhxtp',

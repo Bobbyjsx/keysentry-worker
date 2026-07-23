@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import fernet from 'fernet';
 import { describe, expect, it } from 'vitest';
 import { EncryptionService } from '@/core/encryption';
