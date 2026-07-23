@@ -59,13 +59,16 @@ export const scanSingleRepoTask = task({
         }
       };
 
+      logger.info(
+        `Extracting and scanning tarball for ${payload.repository}...`
+      );
       const result = await githubEngine.scanRepositoryTarball(
         payload.repository,
         onProgress
       );
 
       logger.info(
-        `Repo ${payload.repository} complete. Found ${result.keysFound.length} keys.`
+        `Repo ${payload.repository} complete. Scanned ${result.filesScanned} files, found ${result.keysFound.length} keys.`
       );
 
       await apiClient.sendWebhook({

@@ -1,5 +1,5 @@
-import { type RepoScanPayload, scanSingleRepoTask } from './scan_repo.task';
-import { logger, task } from '@trigger.dev/sdk/v3';
+import type { RepoScanPayload } from './scan_repo.task';
+import { batch, logger, task } from '@trigger.dev/sdk/v3';
 import { config } from '@/core/config';
 import { EncryptionService } from '@/core/encryption';
 import { ScanApiClient } from '../core/api';
@@ -64,16 +64,30 @@ export const githubScanTask = task({
       );
 
       if (reposToScan.length > 0) {
-        // Wait for all sub-tasks to complete so we don't succeed prematurely
-        const promises = reposToScan.map((repo: string) =>
-          scanSingleRepoTask.triggerAndWait({
+        // Wait for all sub-tasks to complete using batch.triggerAndWait
+        // This ensures the parent waits for all children to finish (success or fail)
+        // rather than rejecting early if one child fails.
+        const batchItems = reposToScan.map((repo: string) => ({
+          id: 'github-scan-repo',
+          payload: {
             encrypted_token: payload.encrypted_token,
             repository: repo,
             scan_id: payload.scan_id,
             user_id: payload.user_id,
-          })
+          },
+        }));
+
+        logger.info(`Triggering batch of ${batchItems.length} tasks...`);
+        const { runs } = await batch.triggerAndWait(batchItems as any);
+
+        const failedCount = runs.filter((r) => !r.ok).length;
+        logger.info(
+          `Batch complete. ${failedCount} tasks failed, ${runs.length - failedCount} succeeded.`
         );
-        await Promise.all(promises);
+
+        if (failedCount > 0) {
+          logger.warn(`${failedCount} child tasks failed during execution.`);
+        }
       }
 
       await apiClient.sendWebhook({
