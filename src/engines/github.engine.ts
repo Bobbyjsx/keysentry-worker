@@ -69,6 +69,9 @@ export class GithubEngine {
         );
       }
     }
+    // Filter out completely empty repositories to save fan-out tasks
+    repos = repos.filter((r) => r.size > 0);
+    logger.info(`After filtering empty repos, ${repos.length} remain.`);
     return repos.map((r) => r.full_name);
   }
 
@@ -114,6 +117,7 @@ export class GithubEngine {
 
       let chunkFiles = 0;
       const chunkKeys: DiscoveredKey[] = [];
+      let lastFlushTime = Date.now();
 
       extract.on('entry', (header, stream, next) => {
         // Only scan text-like files, ignore binaries and directories
@@ -144,10 +148,16 @@ export class GithubEngine {
             chunkFiles++;
             chunkKeys.push(...keys);
 
-            if (chunkFiles >= 100 && onChunkScanned) {
+            // Flush in-memory queue to API every 30 seconds or 10,000 files
+            const timeSinceLastFlush = Date.now() - lastFlushTime;
+            if (
+              onChunkScanned &&
+              (timeSinceLastFlush >= 30000 || chunkFiles >= 10000)
+            ) {
               await onChunkScanned(chunkFiles, [...chunkKeys]);
               chunkFiles = 0;
               chunkKeys.length = 0;
+              lastFlushTime = Date.now();
             }
 
             next();
