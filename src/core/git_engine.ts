@@ -79,9 +79,14 @@ export class GitEngine {
     alreadyScannedRepos: string[] = [],
     onProgress?: (
       repoName: string,
-      result: ScanResult,
+      incrementalResult: {
+        discoveredKeys: DiscoveredKey[];
+        filesScanned: number;
+        reposScanned: number;
+      },
       accumulatedRepos: number,
-      accumulatedFiles: number
+      accumulatedFiles: number,
+      isRepoComplete: boolean
     ) => Promise<void>
   ): Promise<{
     discoveredKeys: DiscoveredKey[];
@@ -92,18 +97,66 @@ export class GitEngine {
     let filesScanned = 0;
     const discoveredKeys: DiscoveredKey[] = [];
 
+    const FLUSH_INTERVAL_MS = 1500; // 1.5 seconds
+    let lastFlushTime = Date.now();
+    let pendingFilesScanned = 0;
+    let pendingReposScanned = 0;
+    let pendingDiscoveredKeys: DiscoveredKey[] = [];
+
+    const flushProgress = async (
+      repoName: string,
+      isRepoComplete = false,
+      force = false
+    ) => {
+      const now = Date.now();
+      if ((force || now - lastFlushTime >= FLUSH_INTERVAL_MS) && onProgress) {
+        if (
+          pendingFilesScanned > 0 ||
+          pendingReposScanned > 0 ||
+          pendingDiscoveredKeys.length > 0 ||
+          isRepoComplete
+        ) {
+          await onProgress(
+            repoName,
+            {
+              discoveredKeys: pendingDiscoveredKeys,
+              filesScanned: pendingFilesScanned,
+              reposScanned: pendingReposScanned,
+            },
+            reposScanned + pendingReposScanned,
+            filesScanned + pendingFilesScanned,
+            isRepoComplete
+          );
+          reposScanned += pendingReposScanned;
+          filesScanned += pendingFilesScanned;
+          discoveredKeys.push(...pendingDiscoveredKeys);
+
+          pendingFilesScanned = 0;
+          pendingReposScanned = 0;
+          pendingDiscoveredKeys = [];
+          lastFlushTime = now;
+        }
+      }
+    };
+
     if (target.includes('/')) {
       if (alreadyScannedRepos.includes(target)) {
         return { discoveredKeys: [], filesScanned: 0, reposScanned: 0 };
       }
-      const result = await this.scanRepository(target);
-      if (onProgress) {
-        await onProgress(target, result, 1, result.filesScanned);
-      }
+      const result = await this.scanRepository(
+        target,
+        async (chunkFiles, chunkKeys) => {
+          pendingFilesScanned += chunkFiles;
+          pendingDiscoveredKeys.push(...chunkKeys);
+          await flushProgress(target, false, false);
+        }
+      );
+      pendingReposScanned++;
+      await flushProgress(target, true, true);
       return {
-        discoveredKeys: result.discoveredKeys,
-        filesScanned: result.filesScanned,
-        reposScanned: 1,
+        discoveredKeys,
+        filesScanned,
+        reposScanned,
       };
     }
 
@@ -143,14 +196,17 @@ export class GitEngine {
           logger.info(`Scanning discovered repository: ${repo.full_name}`);
         }
 
-        const result = await this.scanRepository(repo.full_name);
-        discoveredKeys.push(...result.discoveredKeys);
-        reposScanned++;
-        filesScanned += result.filesScanned;
+        const result = await this.scanRepository(
+          repo.full_name,
+          async (chunkFiles, chunkKeys) => {
+            pendingFilesScanned += chunkFiles;
+            pendingDiscoveredKeys.push(...chunkKeys);
+            await flushProgress(repo.full_name, false, false);
+          }
+        );
 
-        if (onProgress) {
-          await onProgress(repo.full_name, result, reposScanned, filesScanned);
-        }
+        pendingReposScanned++;
+        await flushProgress(repo.full_name, true, true);
       }
     } catch (e: any) {
       if (logger) {
@@ -162,7 +218,13 @@ export class GitEngine {
     return { discoveredKeys, filesScanned, reposScanned };
   }
 
-  public async scanRepository(repoName: string): Promise<ScanResult> {
+  public async scanRepository(
+    repoName: string,
+    onChunkScanned?: (
+      filesScannedChunk: number,
+      keysFoundChunk: DiscoveredKey[]
+    ) => Promise<void>
+  ): Promise<ScanResult> {
     const discoveredKeys: DiscoveredKey[] = [];
     let filesScanned = 0;
     const [owner, repo] = repoName.split('/');
@@ -188,14 +250,14 @@ export class GitEngine {
           /\.(js|ts|py|json|env|txt|md|yml|yaml)$/.test(file.path)
       );
 
-      filesScanned = textFiles.length;
-
       const patternsToUse =
         GitEngine.gitleaksPatterns || GitEngine.FALLBACK_PATTERNS;
 
       // 3. Scan files
       for (const file of textFiles) {
         if (!file.path) continue;
+
+        const chunkKeys: DiscoveredKey[] = [];
 
         try {
           const { data: contentData } =
@@ -231,7 +293,7 @@ export class GitEngine {
                   hashedKey = `${matchedText.slice(0, 2)}...`;
                 }
 
-                discoveredKeys.push({
+                chunkKeys.push({
                   key_hash: hashedKey,
                   link: contentData.html_url || '',
                   provider,
@@ -244,6 +306,12 @@ export class GitEngine {
           }
         } catch (_err) {
           // Skip unreadable files
+        }
+
+        filesScanned++;
+        discoveredKeys.push(...chunkKeys);
+        if (onChunkScanned) {
+          await onChunkScanned(1, chunkKeys);
         }
       }
     } catch (e: any) {

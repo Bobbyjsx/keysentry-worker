@@ -88,7 +88,8 @@ export const githubScanTask = task({
         repoName: string,
         resultChunk: any,
         accumulatedRepos: number,
-        accumulatedFiles: number
+        accumulatedFiles: number,
+        isRepoComplete: boolean
       ) => {
         try {
           await fetch(`${apiHost}/api/v1/scans/webhook`, {
@@ -96,9 +97,9 @@ export const githubScanTask = task({
               attempt: attempt,
               files_scanned: resultChunk.filesScanned, // sending incremental values
               keys_found: resultChunk.discoveredKeys,
-              repos_scanned: 1, // incremental
+              repos_scanned: resultChunk.reposScanned || 0, // incremental
               scan_id: payload.scan_id,
-              scanned_repositories: [repoName],
+              scanned_repositories: isRepoComplete ? [repoName] : [],
               status: 'in_progress',
               user_id: payload.user_id,
             }),
