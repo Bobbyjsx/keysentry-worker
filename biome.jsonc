@@ -31,22 +31,22 @@
               [
                 "*.css",
                 "*.scss"
-              ], // Style
-            ],
-          },
+              ] // Style
+            ]
+          }
         },
         "useSortedAttributes": "on",
         "useSortedKeys": "on",
-        "useSortedProperties": "on",
-      },
+        "useSortedProperties": "on"
+      }
     },
-    "enabled": true,
+    "enabled": true
   },
   "css": {
     "parser": {
       "cssModules": true,
-      "tailwindDirectives": true,
-    },
+      "tailwindDirectives": true
+    }
   },
   "files": {
     "ignoreUnknown": true,
@@ -56,7 +56,7 @@
       "!.next",
       "!dist",
       "!build"
-    ],
+    ]
   },
   "formatter": {
     "bracketSpacing": true,
@@ -64,7 +64,7 @@
     "formatWithErrors": false,
     "indentStyle": "space",
     "indentWidth": 2,
-    "useEditorconfig": true,
+    "useEditorconfig": true
   },
   "javascript": {
     "formatter": {
@@ -72,20 +72,20 @@
       "jsxQuoteStyle": "single",
       "quoteStyle": "single",
       "semicolons": "always",
-      "trailingCommas": "es5",
-    },
+      "trailingCommas": "es5"
+    }
   },
   "json": {
     "formatter": {
       "enabled": true,
       "expand": "auto",
-      "trailingCommas": "none",
-    },
+      "trailingCommas": "none"
+    }
   },
   "linter": {
     "domains": {
       "next": "recommended",
-      "react": "recommended",
+      "react": "recommended"
     },
     "enabled": true,
     "rules": {
@@ -95,12 +95,12 @@
         "noStaticElementInteractions": "off",
         "noSvgWithoutTitle": "off",
         "preset": "recommended",
-        "useKeyWithClickEvents": "off",
+        "useKeyWithClickEvents": "off"
       },
       "correctness": {
         "noUnusedImports": "error",
         "useExhaustiveDependencies": "warn",
-        "useUniqueElementIds": "warn",
+        "useUniqueElementIds": "warn"
       },
       "nursery": {
         "useSortedClasses": {
@@ -115,30 +115,30 @@
               "cva",
               "tw",
               "tw.*"
-            ],
-          },
-        },
+            ]
+          }
+        }
       },
       "preset": "recommended",
       "security": {
-        "noDangerouslySetInnerHtml": "info",
+        "noDangerouslySetInnerHtml": "info"
       },
       "style": {
         "noUnusedTemplateLiteral": "error",
-        "useTemplate": "warn",
+        "useTemplate": "warn"
       },
       "suspicious": {
         "noArrayIndexKey": "off",
         "noExplicitAny": "off",
         "noThenProperty": "off",
-        "noUnknownAtRules": "warn",
-      },
-    },
+        "noUnknownAtRules": "warn"
+      }
+    }
   },
   "vcs": {
     "clientKind": "git",
     "defaultBranch": "master",
     "enabled": true,
-    "useIgnoreFile": true,
-  },
+    "useIgnoreFile": true
+  }
 }
