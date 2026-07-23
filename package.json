@@ -2,7 +2,7 @@
   "author": "",
   "dependencies": {
     "@octokit/rest": "^22.0.1",
-    "@trigger.dev/sdk": "4.5.4",
+    "@trigger.dev/sdk": "4.5.7",
     "dotenv": "^17.4.2",
     "fernet": "^0.3.3",
     "toml": "^4.3.0"

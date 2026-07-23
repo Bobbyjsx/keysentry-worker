@@ -219,11 +219,15 @@ export class GitEngine {
       }
     } catch (e: any) {
       if (logger) {
-        logger.error(`Error scanning repository ${repoName}: ${e.message}`);
+        logger.warn(
+          `Skipping repository ${repoName} due to error: ${e.message}`
+        );
       } else {
-        console.error(`Error scanning repository ${repoName}: ${e.message}`);
+        console.warn(
+          `Skipping repository ${repoName} due to error: ${e.message}`
+        );
       }
-      throw e;
+      return { discoveredKeys: [], filesScanned: 0 };
     }
 
     return { discoveredKeys, filesScanned };
