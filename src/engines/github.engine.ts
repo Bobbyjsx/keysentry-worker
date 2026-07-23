@@ -31,9 +31,28 @@ export class GithubEngine {
         org: target,
       });
     } else {
-      repos = await this.octokit.paginate(this.octokit.rest.repos.listForUser, {
-        username: target,
-      });
+      const { data: authUser } =
+        await this.octokit.rest.users.getAuthenticated();
+      if (authUser.login.toLowerCase() === target.toLowerCase()) {
+        // Use listForAuthenticatedUser to ensure we fetch private repositories
+        const allAuthRepos = await this.octokit.paginate(
+          this.octokit.rest.repos.listForAuthenticatedUser,
+          {
+            affiliation: 'owner,collaborator',
+          }
+        );
+        // Filter out repositories that do not belong to the target username
+        repos = allAuthRepos.filter(
+          (r) => r.owner.login.toLowerCase() === target.toLowerCase()
+        );
+      } else {
+        repos = await this.octokit.paginate(
+          this.octokit.rest.repos.listForUser,
+          {
+            username: target,
+          }
+        );
+      }
     }
     return repos.map((r) => r.full_name);
   }
