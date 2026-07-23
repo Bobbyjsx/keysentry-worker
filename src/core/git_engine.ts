@@ -74,7 +74,16 @@ export class GitEngine {
     }
   }
 
-  public async scanTarget(target: string): Promise<{
+  public async scanTarget(
+    target: string,
+    alreadyScannedRepos: string[] = [],
+    onProgress?: (
+      repoName: string,
+      result: ScanResult,
+      accumulatedRepos: number,
+      accumulatedFiles: number
+    ) => Promise<void>
+  ): Promise<{
     discoveredKeys: DiscoveredKey[];
     reposScanned: number;
     filesScanned: number;
@@ -84,7 +93,13 @@ export class GitEngine {
     const discoveredKeys: DiscoveredKey[] = [];
 
     if (target.includes('/')) {
+      if (alreadyScannedRepos.includes(target)) {
+        return { discoveredKeys: [], filesScanned: 0, reposScanned: 0 };
+      }
       const result = await this.scanRepository(target);
+      if (onProgress) {
+        await onProgress(target, result, 1, result.filesScanned);
+      }
       return {
         discoveredKeys: result.discoveredKeys,
         filesScanned: result.filesScanned,
@@ -115,13 +130,27 @@ export class GitEngine {
       }
 
       for (const repo of repos) {
+        if (alreadyScannedRepos.includes(repo.full_name)) {
+          if (logger) {
+            logger.info(
+              `Skipping already scanned repository: ${repo.full_name}`
+            );
+          }
+          continue;
+        }
+
         if (logger) {
           logger.info(`Scanning discovered repository: ${repo.full_name}`);
         }
+
         const result = await this.scanRepository(repo.full_name);
         discoveredKeys.push(...result.discoveredKeys);
         reposScanned++;
         filesScanned += result.filesScanned;
+
+        if (onProgress) {
+          await onProgress(repo.full_name, result, reposScanned, filesScanned);
+        }
       }
     } catch (e: any) {
       if (logger) {
