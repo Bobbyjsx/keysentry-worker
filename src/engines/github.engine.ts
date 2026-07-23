@@ -3,6 +3,7 @@ import * as zlib from 'node:zlib';
 import * as tar from 'tar-stream';
 import { type DiscoveredKey, ScannerEngine } from './scanner.engine';
 import { Octokit } from '@octokit/rest';
+import { logger } from '@trigger.dev/sdk/v3';
 
 /**
  * GithubEngine processes repository discovery and streaming.
@@ -27,6 +28,7 @@ export class GithubEngine {
 
     let repos: any[] = [];
     if (entity.type === 'Organization') {
+      logger.info(`Using Organization scan for '${target}'`);
       repos = await this.octokit.paginate(this.octokit.rest.repos.listForOrg, {
         org: target,
       });
@@ -34,6 +36,9 @@ export class GithubEngine {
       const { data: authUser } =
         await this.octokit.rest.users.getAuthenticated();
       if (authUser.login.toLowerCase() === target.toLowerCase()) {
+        logger.info(
+          `Using authenticated user scan for '${target}' (fetching private & public repos)`
+        );
         // Use listForAuthenticatedUser to ensure we fetch private repositories
         const allAuthRepos = await this.octokit.paginate(
           this.octokit.rest.repos.listForAuthenticatedUser,
@@ -42,17 +47,20 @@ export class GithubEngine {
             per_page: 100,
           }
         );
-        console.log(
+        logger.info(
           `Fetched ${allAuthRepos.length} total repos for authenticated user.`
         );
         // Filter out repositories that do not belong to the target username
         repos = allAuthRepos.filter(
           (r) => r.owner.login.toLowerCase() === target.toLowerCase()
         );
-        console.log(
+        logger.info(
           `After filtering for owner '${target}', ${repos.length} repos remain.`
         );
       } else {
+        logger.info(
+          `Using non-authenticated public scan for '${target}' (token owner is '${authUser.login}')`
+        );
         repos = await this.octokit.paginate(
           this.octokit.rest.repos.listForUser,
           {
